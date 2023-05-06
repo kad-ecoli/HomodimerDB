@@ -1,0 +1,85 @@
+pdb/                                Stores pdb monomer structures in .tar.gz files
+
+        seqs.fasta                  The seqs of all pdb structures stored in div/
+
+        div/
+                
+                aa.tar.gz           archives, each of a folder which contains all
+                ab.tar.gz           chain files for pdb entries with two middle
+                ...                 that correspond to the archive name
+
+
+
+all/                                Stores information for all dimers discovered,
+                                    without redundancy removal. For HomodimerDB,
+                                    these would be same sequence and in-contact.
+
+       chains.txt                   Names of all chains involved in dimers.txt
+       
+       dimers.txt                   Names of all dimers discovered
+       
+       seqs_shorter.fasta           Sequences for each dimer, using the shorter
+                                    chain for each sequence. This is the default
+                                    for clustering.
+       
+       seqs_longer.fasta            Sequences for each dimer, using the longer 
+                                    chain for each sequence.
+
+
+cluster/                            Stores information resulting from sequence
+                                    clustering on the sequences in 
+                                    all/seqs_shorter.fasta 
+
+       clusters.txt                 Lists the dimer names which are centers of
+                                    sequence clusters. These dimer names are
+                                    used as names of their respective clusters.
+
+       groups.txt                   Lists the dimer names which are centers of
+                                    structure clusters. Structure clusters are
+                                    subsets of sequence clusters, and we call
+                                    structure clusters "groups". These dimer
+                                    names are used as names of their 
+                                    respective groups.
+
+       membership.tsv               Describes the membership of every dimer 
+                                    (from all/dimers.txt) to a cluster (seq)
+                                    and group (structure)
+
+
+nonredundant/                       The intended output of HomodimerDB. The
+                                    dimers described here comprehensively
+                                    describe the PDB while being sequence
+                                    and strucutre nonredundant. This data 
+                                    would make a good training set for protein
+                                    dimer structure prediction.
+       
+       chains.txt                   Names of all chains involved in dimers.txt
+
+       dimers.txt                   Names of all dimers in the nonredundant
+                                    and comprehensive dataset.
+
+       seqs_shorter.fasta           Sequences for each dimer, using the shorter
+                                    chain for each sequence.
+
+       seqs_longer.fasta            Sequences for each dimer, using the longer
+                                    chain for each sequence.
+
+
+extra/                              Holds subsets of information in nonredundant/
+                                    These are not comprehensive but maintain
+                                    non-redundancy in terms of sequence and
+                                    structure.
+
+        cluster30_dimers.txt        These files list dimers that are involved
+        cluster40_dimers.txt        in XX% sequence clustering resulting from
+        ...                         nonredundant/seqs_shorter.fasta
+
+        cluster30_seqs_longer.fasta    These list the sequences involved in each
+        cluster40_seqs_longer.fasta    respective cluster. Here, we include the
+        ...                            longer sequence of each dimer. Note the
+                                       clustering was done upon the shorter seqs.
+
+        cluster30_seqs_shorter.fasta   These list the sequences involved in each
+        cluster40_seqs_shorter.fasta   respective cluster. Here, we include the
+        ...                            shorter sequence of each dimer, which was
+                                       the seq used for clustering.
