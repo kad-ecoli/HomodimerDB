@@ -52,6 +52,8 @@ def display_dimer(entryid):
         fp=gzip.open(filename,'wt')
         fp.write(pdbtxt)
         fp.close()
+    else:
+        print("use existing "+filename)
 
 
     sequence1=''
