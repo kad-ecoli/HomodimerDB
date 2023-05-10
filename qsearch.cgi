@@ -49,6 +49,7 @@ fp.close()
 
 fasta_dict=dict()
 if outfmt=='txt':
+    print("Content-type: text/plain\n")
     fp=open(rootdir+"/data/nonredundant/seq.fasta")
     for block in fp.read().split('>')[1:]:
         header,sequence=block.splitlines()
@@ -82,8 +83,8 @@ for entryid in dimer_list:
     
     items=(entryid,pdb,assembly[1:])
     if outfmt=='txt':
-        items+='\t'+fasta_dict[chain1]+'\t'+fasta_dict[chain2]
-        html_txt+='\t'.join(items)+'\n'
+        html_txt+='\t'.join(items)+'\t'+fasta_dict[chain1]+ \
+                                   '\t'+fasta_dict[chain2]+'\n'
     else:
         if order=="reso":
             sort_line.append((reso,items))
@@ -93,7 +94,7 @@ for entryid in dimer_list:
             sort_line.append((entryid,items))
 
 if outfmt=="txt":
-    print("Content-type: text/plain\n")
+    #print("Content-type: text/plain\n")
     print(html_txt)
     exit()
 
