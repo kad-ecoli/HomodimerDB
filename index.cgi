@@ -48,14 +48,21 @@ if os.path.isfile(filename):
             NONRED_NUM_DIMER=line.split()[-1]
     fp.close()
     print('''
-    <a href=qsearch.cgi>
     The current database, which was updated on %s, contains a non-redundant set of
+    <a href=qsearch.cgi>
     %s chains involved in %s homodimeric interactions<a>
     curated from all %s chains in %s homodimers from PDB.
     '''%(LAST_UPDATE_UTC,
         NONRED_NUM_CHAIN, NONRED_NUM_DIMER,
         FULL_SET_NUM_CHAIN, FULL_SET_NUM_DIMER,
     ))
+
+cmd="ls -rt output/|cut -f1 -d.|tail -1"
+p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
+stdout,stderr=p.communicate()
+entryid=stdout.decode().strip()
+if len(entryid):
+    print("<li><a href=pdb.cgi?entryid=%s>View an example entry</a></li>"%entryid)
 
 if len(html_footer):
     print(html_footer)
