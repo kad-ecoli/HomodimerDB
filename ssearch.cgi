@@ -67,7 +67,7 @@ if len(sequence)>1500:
 print('&gt;'+header+'<br>')
 print('<br>'.join(textwrap.wrap(sequence,60))+'<p></p>')
 
-cmd="echo %s|%s/script/blastp -db %s/data/nonredundant/seq.fasta -max_target_seqs 1000 -outfmt '6 sacc slen evalue nident length' "%(sequence,rootdir,rootdir)
+cmd="echo %s|%s/script/blastp -db %s/data/nonredundant/seqs.fasta -max_target_seqs 1000 -outfmt '6 sacc slen evalue nident length' "%(sequence,rootdir,rootdir)
 score_name="E-value"
 p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
 stdout,stderr=p.communicate()
