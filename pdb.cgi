@@ -11,7 +11,7 @@ import re
 
 rootdir=os.path.dirname(os.path.abspath(__file__))
 
-def display_dimer(entryid):
+def display_dimer(entryid,viewer):
     print('''
 <tr><td><h1 align=center>$entryid</h1></td></tr>
 '''.replace("$entryid",entryid))
@@ -79,10 +79,10 @@ def display_dimer(entryid):
 <div id="contentDiv">
     <div id="RContent" style="display: block;">
     <table width=100% border="0" style="font-family:Monospace;font-size:14px;background:#F2F2F2;" >
-    <tr><td><font color=blue>&gt;$chain1 (length=$L1) [<a href=ssearch.cgi?sequence=$sequence1 target=_blank>Search sequence</a>]</font></td></tr>
-    <tr><td><span title="Only residues with experimentally determined coordinates are included. Residues unobserved in the structure are excluded."><font color=blue>$seq_txt1</font></span></td></tr>
-    <tr><td><font color=red>&gt;$chain2 (length=$L2) [<a href=ssearch.cgi?sequence=$sequence2 target=_blank>Search sequence</a>]</font></td></tr>
-    <tr><td><span title="Only residues with experimentally determined coordinates are included. Residues unobserved in the structure are excluded."><font color=red>$seq_txt2</font></span></td></tr>
+    <tr><td><font color=red>&gt;$chain1 (length=$L1) [<a href=ssearch.cgi?sequence=$sequence1 target=_blank>Search sequence</a>]</font></td></tr>
+    <tr><td><span title="Only residues with experimentally determined coordinates are included. Residues unobserved in the structure are excluded."><font color=red>$seq_txt1</font></span></td></tr>
+    <tr><td><font color=blue>&gt;$chain2 (length=$L2) [<a href=ssearch.cgi?sequence=$sequence2 target=_blank>Search sequence</a>]</font></td></tr>
+    <tr><td><span title="Only residues with experimentally determined coordinates are included. Residues unobserved in the structure are excluded."><font color=blue>$seq_txt2</font></span></td></tr>
     </table>
 </div>
 </td></tr>
@@ -166,12 +166,12 @@ def display_dimer(entryid):
             BioLiP2=''
             if pdbid+chainid1 in BioLiP_dict:
                 BioLiP1='''
-        <td><font color=blue>BioLiP:<a href="../BioLiP/pdb.cgi?pdb=$pdbid&chain=$chainid1" 
+        <td><font color=red>BioLiP:<a href="../BioLiP/pdb.cgi?pdb=$pdbid&chain=$chainid1" 
             target=_blank>$pdbid$chainid1</a></font></td>
             '''.replace("$pdbid",pdbid).replace("$chainid1",chainid1)
             if pdbid+chainid2 in BioLiP_dict:
                 BioLiP2='''
-        <td><font color=red>BioLiP:<a href="../BioLiP/pdb.cgi?pdb=$pdbid&chain=$chainid2" 
+        <td><font color=blue>BioLiP:<a href="../BioLiP/pdb.cgi?pdb=$pdbid&chain=$chainid2" 
             target=_blank>$pdbid$chainid2</a></font></td>
             '''.replace("$pdbid",pdbid).replace("$chainid2",chainid2)
             BioLiP_html+='''
@@ -246,18 +246,18 @@ $pubmed_html
     <table border="0" style="font-family:Monospace;font-size:14px;background:#F2F2F2;" >
     <tr bgcolor="#DEDEDE" align=center>
         <th></th>
-        <th><b><font color=blue>Chain 1</font></b></th>
-        <th><b><font color=red>Chain 2</font></b></th>
+        <th><b><font color=red>Chain 1</font></b></th>
+        <th><b><font color=blue>Chain 2</font></b></th>
     </tr>
     <tr align=center>
         <td><b>Model ID</b></td>
-        <td><font color=blue>$modelid1</font></td>
-        <td><font color=red>$modelid2</font></td>
+        <td><font color=red>$modelid1</font></td>
+        <td><font color=blue>$modelid2</font></td>
     </tr>
     <tr bgcolor="#DEDEDE" align=center>
         <td><b>Chain ID</b></td>
-        <td><font color=blue>$chainid1</font></td>
-        <td><font color=red>$chainid2</font></td>
+        <td><font color=red>$chainid1</font></td>
+        <td><font color=blue>$chainid2</font></td>
     </tr>
     <tr align=center>
         <td><b>UniProt accession</b></td>
@@ -266,8 +266,8 @@ $pubmed_html
     </tr>
     <tr bgcolor="#DEDEDE" align=center>
         <td><b>Species</b></td>
-        <td><font color=blue>$species1</font></td>
-        <td><font color=red>$species2</font></td>
+        <td><font color=red>$species1</font></td>
+        <td><font color=blue>$species2</font></td>
     </tr>
 $BioLiP_html
     </table>
@@ -289,22 +289,114 @@ $BioLiP_html
         cmd="curl -s https://files.wwpdb.org/pub/pdb/data/assemblies/mmCIF/divided/%s/%s-assembly%s.cif.gz -o %s"%(divided,pdbid,assemblyid,assembly_filename)
         os.system(cmd)
 
-    #if modelid1!='1':
-        #chainid1+='-'+modelid1
-    #if modelid2!='1':
-        #chainid2+='-'+modelid2
+    if not viewer:
+        cmd="zcat "+assembly_filename+"|"+rootdir+"/script/pdb2fasta - |grep -F '>'|cut -f2 -d:|cut -f1"
+        p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        stdout,stderr=p.communicate()
+        chainid_list=stdout.decode().splitlines()
+        if max([len(chainid) for chainid in chainid_list])>1:
+            viewer="ngl"
+        else:
+            viewer="jmol"
 
-    print('''
+    if viewer=="ngl":
+        if modelid1!='1':
+            chainid1+='-'+modelid1
+        if modelid2!='1':
+            chainid2+='-'+modelid2
+        print('''
 <tr><td>
 <div id="headerDiv">
     <div id="titleText">3D structure</div>
 </div>
+Switch viewer: [NGL] <a href="?entryid=$entryid&viewer=jmol">[JSmol]</a>
 <div style="clear:both;"></div>
 <div id="contentDiv">
 <div id="RContent" style="display: block;">
 <table width=100% border="0" style="font-family:Monospace;font-size:14px;background:#F2F2F2;" >
 <tr><td>
-    Dimer structure: Chain 1 in blue; Chain 2 in red.
+    Dimer structure: 
+    <font color=red>Chain 1 in red</font>;
+    <font color=blue>Chain 2 in blue</font>.
+
+    <script src="ngl/dist/ngl.js"></script>
+    <script type="text/javascript"> 
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var stage = new NGL.Stage("mydiv0");
+        var schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+            ["red", ":A"],
+            ["blue", ":B"],
+            ["grey", "*"]
+        ], "$assembly_name");
+        stage.loadFile("output/$basename").then( function( o ){
+            o.addRepresentation("cartoon", {color: schemeId }); 
+            o.autoView();
+        });
+    });
+
+    </script>
+    <div id="mydiv0" style="width:400px; height:400px;"></div>
+    <table>
+        <tr><td>Download:</td><td>
+            <a href=output/$basename download>$basename</a>
+        </td></tr>
+    </table>
+
+</td><td>
+    Full biological assembly
+
+    <script type="text/javascript"> 
+    document.addEventListener("DOMContentLoaded", function () {
+        var stage = new NGL.Stage("mydiv1");
+        var schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+            ["red", ":$chainid1"],
+            ["blue", ":$chainid2"],
+            ["grey", "nucleic"],
+            ["grey", "*"]
+        ], "$assembly_name");
+        stage.loadFile("output/$assembly_name").then( function( o ){
+            o.addRepresentation( "licorice", {
+                sele: "hetero and not water",
+                multipleBond: true
+            } );
+            o.addRepresentation("cartoon", {color: schemeId }); 
+            o.autoView();
+        });
+    });
+    </script>
+    <div id="mydiv1" style="width:400px; height:400px;"></div>
+    <table>
+        <tr><td>Download:</td><td>
+            <a href=output/$assembly_name download>$assembly_name</a>
+        </td></tr>
+    </table>
+
+</td></tr>
+</table>
+</div>
+</td></tr>
+'''.replace( "$basename",os.path.basename(filename)
+  ).replace( "$entryid",entryid
+  ).replace( "$assembly_name",assembly_name
+  ).replace( "$chainid1",chainid1).replace( "$chainid2",chainid2
+  ))
+    else:
+        print('''
+<tr><td>
+<div id="headerDiv">
+    <div id="titleText">3D structure</div>
+</div>
+Switch viewer: <a href="?entryid=$entryid&viewer=ngl">[NGL]</a> [JSmol]
+<div style="clear:both;"></div>
+<div id="contentDiv">
+<div id="RContent" style="display: block;">
+<table width=100% border="0" style="font-family:Monospace;font-size:14px;background:#F2F2F2;" >
+<tr><td>
+    Dimer structure: 
+    <font color=red>Chain 1 in red</font>;
+    <font color=blue>Chain 2 in blue</font>.
 
     <script type="text/javascript"> 
     $(document).ready(function()
@@ -313,7 +405,7 @@ $BioLiP_html
             width: 400,
             height: 400,
             j2sPath: "jsmol/j2s",
-            script: "load output/$basename; color background black; cartoons; spacefill off; wireframe off; select :A; color blue; select :B; color red; "
+            script: "load output/$basename; color background black; cartoons; spacefill off; wireframe off; select :A; color red; select :B; color blue; "
         }
         $("#mydiv0").html(Jmol.getAppletHtml("jmolApplet0",Info))
     });
@@ -321,7 +413,7 @@ $BioLiP_html
     <span id=mydiv0></span>
     <table>
         <tr><td>Color:</td><td>
-            [<a href="javascript:Jmol.script(jmolApplet0, 'select :A; color blue; select :B; color red;')">By chain</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet0, 'select :A; color red; select :B; color blue;')">By chain</a>] &nbsp;
             [<a href="javascript:Jmol.script(jmolApplet0, 'select :A or :B; color group')">By residue index</a>] &nbsp;
         </td></tr>
         <tr><td>Spin:</td><td>
@@ -352,7 +444,7 @@ $BioLiP_html
             width: 400,
             height: 400,
             j2sPath: "jsmol/j2s",
-            script: "load output/$assembly_name; color background black; cartoons; spacefill off; wireframe off; select :'$chainid1'; color blue; select :'$chainid2'; color red; "
+            script: "load output/$assembly_name; color background black; cartoons; select nucleic; color lightgrey; select :'$chainid1'; color red; select :'$chainid2'; color blue; select protein or solvent or nucleic; spacefill off; wireframe off; "
         }
         $("#mydiv1").html(Jmol.getAppletHtml("jmolApplet1",Info))
     });
@@ -360,7 +452,7 @@ $BioLiP_html
     <span id=mydiv1></span>
     <table>
         <tr><td>Color:</td><td>
-            [<a href="javascript:Jmol.script(jmolApplet1, 'select :$chainid1; color blue; select :$chainid2; color red;')">By chain</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet1, 'select :$chainid1; color red; select :$chainid2; color blue;')">By chain</a>] &nbsp;
             [<a href="javascript:Jmol.script(jmolApplet1, 'select :$chainid1 or :$chainid2; color group')">By residue index</a>] &nbsp;
         </td></tr>
         <tr><td>Spin:</td><td>
@@ -386,16 +478,71 @@ $BioLiP_html
 </div>
 </td></tr>
 '''.replace( "$basename",os.path.basename(filename)
+  ).replace( "$entryid",entryid
   ).replace( "$assembly_name",assembly_name
   ).replace( "$chainid1",chainid1).replace( "$chainid2",chainid2
   ))
 
+    #### similar dimer ####
+    membership_dict=dict()
+    fp=open(rootdir+"/data/cluster/membership.tsv")
+    membership_dict=dict()
+    target_seqclust=''
+    for line in fp.read().splitlines():
+        dimer,seqclust,nonredundant=line.split('\t')
+        if dimer==nonredundant:
+            continue
+        if nonredundant==entryid:
+            target_seqclust=seqclust
+        if not seqclust in membership_dict:
+            membership_dict[seqclust]=dict()
+        if not nonredundant in membership_dict[seqclust]:
+            membership_dict[seqclust][nonredundant]=[]
+        membership_dict[seqclust][nonredundant].append(dimer)
+    fp.close()
+    seqclust=target_seqclust
+    if len(seqclust):
+        print('''
+<tr><td>
+<div id="headerDiv">
+    <div id="titleText">Similar dimers</div>
+</div>
+<div style="clear:both;"></div>
+<div id="contentDiv">
+    <div id="RContent" style="display: block;">
+    <table border="0" style="font-family:Monospace;font-size:14px;background:#F2F2F2;" >
+    ''')
+        if len(membership_dict[seqclust][entryid])>1:
+            print('''
+    <tr bgcolor="#DEDEDE" align=center>
+        <td><b>Other dimers with similar sequences and structures</b></td>
+        <td>$dimer_list</td>
+    </tr>
+            '''.replace("$dimer_list",' '.join(membership_dict[seqclust][entryid])))
+        if len(membership_dict[seqclust])>1:
+            dimer_list=[]
+            for nonredundant in membership_dict[seqclust]:
+                if nonredundant==entryid:
+                    continue
+                dimer_list.append("<li><a href=pdb.cgi?entryid="+nonredundant+">"+nonredundant+"</a> "+' '.join(membership_dict[seqclust][nonredundant])+'</li>')
+            print('''
+    <tr align=center>
+        <td><b>Other dimers with similar sequences but different poses</b></td>
+        <td>$dimer_list</td>
+    </tr>
+            '''.replace('$dimer_list','\n'.join(dimer_list)))
+        print('''
+    </table>
+</div>
+</td></tr>
+        ''')
     return 
 
 if __name__=="__main__":
     form   =cgi.FieldStorage()
     entryid=form.getfirst("entryid",'')
     entryid=entryid.strip().split()[0]
+    viewer =form.getfirst("viewer",'')
     
 
     print("Content-type: text/html\n")
@@ -412,7 +559,7 @@ if __name__=="__main__":
     
 
     if '_' in entryid:
-        display_dimer(entryid)
+        display_dimer(entryid,viewer)
     
     print('''</table>
 <p></p>
