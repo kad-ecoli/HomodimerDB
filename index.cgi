@@ -57,7 +57,7 @@ if os.path.isfile(filename):
         FULL_SET_NUM_CHAIN, FULL_SET_NUM_DIMER,
     ))
 
-cmd="ls -rt output/|cut -f1 -d.|tail -1"
+cmd='ls -rt output/|grep -F .pdb.gz|cut -f1 -d.|tail -1'
 p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
 stdout,stderr=p.communicate()
 entryid=stdout.decode().strip()
