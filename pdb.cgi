@@ -26,6 +26,7 @@ def display_dimer(entryid):
     chainid2  =chainid2[1:]
     divided   =pdbid[-3:-1]
     
+    #### display sequence ####
     filename = rootdir+"/output/"+entryid+".pdb.gz"
     if not os.path.isfile(filename):
         pdbtxt=''
@@ -97,6 +98,202 @@ def display_dimer(entryid):
   ).replace("$seq_txt2",'<br>'.join(textwrap.wrap(sequence2,60))
   ))
 
+    #### structure information ####
+    title      =""
+    accession1 =""
+    accession2 =""
+    reso       =""
+    method     =""
+    contactnum =""
+    seqid      =""
+    species1   =""
+    species2   =""
+    fp=open("data/nonredundant/dimers_info.tsv")
+    for line in fp.read().splitlines():
+        if not line.startswith(entryid):
+            continue
+        items=line.split('\t')
+        if entryid!=items[0] or len(items)<=9:
+            continue
+        title      =items[1]
+        accession1 =items[2]
+        accession2 =items[3]
+        reso       =items[4]
+        method     =items[5]
+        contactnum =items[6]
+        seqid      =items[7]
+        species1   =items[8]
+        species2   =items[9]
+
+        if species1:
+            taxonid1=species1.split()[0]
+            species1="<a href=https://ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id="+taxonid1+">"+taxonid1+"</a>"+species1[(len(taxonid1)):]
+        if species2:
+            taxonid2=species2.split()[0]
+            species2="<a href=https://ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id="+taxonid2+">"+taxonid2+"</a>"+species2[(len(taxonid2)):]
+        if reso=='NOT':
+            reso="Not applicable"
+        elif reso:
+            reso+="&#8491;"
+    fp.close()
+    
+    BioLiP_html=""
+    pubmed_html=""
+    if os.path.isfile("../BioLiP/data/pdb_all.tsv.gz"):
+        BioLiP_dict=dict()
+        fp=gzip.open("../BioLiP/data/pdb_all.tsv.gz",'rt')
+        for line in fp.read().splitlines():
+            if not line.startswith(pdbid+'\t'):
+                continue
+            items=line.split('\t')
+            #pdb    chain   resolution      csa     csa(Renumbered) ec      go      uniprot pubmed
+            if items[1]!=chainid1 and items[1]!=chainid2:
+                continue
+            chainid=items[1]
+            ec=items[5]
+            go=items[6]
+            pubmed=items[8]
+            BioLiP_dict[pdbid+chainid]=[ec,go]
+            pubmed_html='''
+    <tr align=center>
+        <td><b>PubMed citation</b></td>
+        <td><a href=https://pubmed.ncbi.nlm.nih.gov/$pubmed target=_blank>$pubmed</a></td>
+    </tr>
+    '''.replace("$pubmed",pubmed)
+        fp.close()
+        if len(BioLiP_dict):
+            BioLiP1=''
+            BioLiP2=''
+            if pdbid+chainid1 in BioLiP_dict:
+                BioLiP1='''
+        <td><font color=blue>BioLiP:<a href="../BioLiP/pdb.cgi?pdb=$pdbid&chain=$chainid1" 
+            target=_blank>$pdbid$chainid1</a></font></td>
+            '''.replace("$pdbid",pdbid).replace("$chainid1",chainid1)
+            if pdbid+chainid2 in BioLiP_dict:
+                BioLiP2='''
+        <td><font color=red>BioLiP:<a href="../BioLiP/pdb.cgi?pdb=$pdbid&chain=$chainid2" 
+            target=_blank>$pdbid$chainid2</a></font></td>
+            '''.replace("$pdbid",pdbid).replace("$chainid2",chainid2)
+            BioLiP_html+='''
+    <tr align=center>
+        <td><b>Function annotation</b></td> $BioLiP1 $BioLiP2
+    </tr>
+    '''.replace("$BioLiP1",BioLiP1).replace("$BioLiP2",BioLiP2)
+
+    print('''
+<tr><td>
+<div id="headerDiv">
+    <div id="titleText">Structure information</div>
+</div>
+<div style="clear:both;"></div>
+<div id="contentDiv">
+    <div id="RContent" style="display: block;">
+    <table border="0" style="font-family:Monospace;font-size:14px;background:#F2F2F2;" >
+    <tr bgcolor="#DEDEDE" align=center>
+        <td><b>PDB ID</b></td>
+        <td>$pdbid (database links:
+            <a href=https://rcsb.org/structure/$pdbid target=_blank>RCSB PDB</a>
+            <a href=https://ebi.ac.uk/pdbe/entry/pdb/$pdbid target=_blank>PDBe</a>
+            <a href=https://pdbj.org/mine/summary/$pdbid target=_blank>PDBj</a>
+            <a href=http://ebi.ac.uk/pdbsum/$pdbid target=_blank>PDBsum</a>)</td>
+    </tr>
+    <tr align=center>
+        <td><b>Title</b></td>
+        <td>$title</td>
+    </tr>
+    <tr bgcolor="#DEDEDE" align=center>
+        <td><b>Assembly ID</b></td>
+        <td>$assemblyid</td>
+    </tr>
+    <tr align=center>
+        <td><b>Resolution</b></td>
+        <td>$reso</td>
+    </tr>
+    <tr bgcolor="#DEDEDE" align=center>
+        <td><b>Method of structure determination</b></td>
+        <td>$method</td>
+    </tr>
+    <tr align=center>
+        <td><b>Number of inter-chain contacts</b></td>
+        <td>$contactnum</td>
+    </tr>
+    <tr bgcolor="#DEDEDE" align=center>
+        <td><b>Sequence identity between the two chains</b></td>
+        <td>$seqid</td>
+    </tr>
+$pubmed_html
+    </table>
+</div>
+</td></tr>
+'''.replace("$pdbid",pdbid
+  ).replace("$reso",reso
+  ).replace("$assemblyid",assemblyid
+  ).replace("$method",method
+  ).replace("$contactnum",contactnum
+  ).replace("$seqid",seqid
+  ).replace("$title",title
+  ).replace("$pubmed_html",pubmed_html
+  ))
+
+    print('''
+<tr><td>
+<div id="headerDiv">
+    <div id="titleText">Chain information</div>
+</div>
+<div style="clear:both;"></div>
+<div id="contentDiv">
+    <div id="RContent" style="display: block;">
+    <table border="0" style="font-family:Monospace;font-size:14px;background:#F2F2F2;" >
+    <tr bgcolor="#DEDEDE" align=center>
+        <th></th>
+        <th><b><font color=blue>Chain 1</font></b></th>
+        <th><b><font color=red>Chain 2</font></b></th>
+    </tr>
+    <tr align=center>
+        <td><b>Model ID</b></td>
+        <td><font color=blue>$modelid1</font></td>
+        <td><font color=red>$modelid2</font></td>
+    </tr>
+    <tr bgcolor="#DEDEDE" align=center>
+        <td><b>Chain ID</b></td>
+        <td><font color=blue>$chainid1</font></td>
+        <td><font color=red>$chainid2</font></td>
+    </tr>
+    <tr align=center>
+        <td><b>UniProt accession</b></td>
+        <td><a href=https://uniprot.org/uniprot/$accession1 target=_blank>$accession1</a></td>
+        <td><a href=https://uniprot.org/uniprot/$accession2 target=_blank>$accession2</a></td>
+    </tr>
+    <tr bgcolor="#DEDEDE" align=center>
+        <td><b>Species</b></td>
+        <td><font color=blue>$species1</font></td>
+        <td><font color=red>$species2</font></td>
+    </tr>
+$BioLiP_html
+    </table>
+</div>
+</td></tr>
+'''.replace("$pdbid",pdbid
+  ).replace("$modelid1",modelid1).replace("$modelid2",modelid2
+  ).replace("$chainid1",chainid1).replace("$chainid2",chainid2
+  ).replace("$accession1",accession1).replace("$accession2",accession2
+  ).replace("$species1",species1).replace("$species2",species2
+  ).replace("$BioLiP_html",BioLiP_html
+  ))
+
+    #### display structure ####
+    assembly_name=pdbid+"-assembly"+assemblyid+".cif.gz"
+    assembly_filename=rootdir+"/output/"+assembly_name
+    if not os.path.isfile(assembly_filename):
+        divided=pdbid[-3:-1]
+        cmd="curl -s https://files.wwpdb.org/pub/pdb/data/assemblies/mmCIF/divided/%s/%s-assembly%s.cif.gz -o %s"%(divided,pdbid,assemblyid,assembly_filename)
+        os.system(cmd)
+
+    #if modelid1!='1':
+        #chainid1+='-'+modelid1
+    #if modelid2!='1':
+        #chainid2+='-'+modelid2
+
     print('''
 <tr><td>
 <div id="headerDiv">
@@ -104,57 +301,101 @@ def display_dimer(entryid):
 </div>
 <div style="clear:both;"></div>
 <div id="contentDiv">
-    <div id="RContent" style="display: block;">
-    <table width=100% border="0" style="font-family:Monospace;font-size:14px;background:#F2F2F2;" >
-    <tr><td>
+<div id="RContent" style="display: block;">
+<table width=100% border="0" style="font-family:Monospace;font-size:14px;background:#F2F2F2;" >
+<tr><td>
+    Dimer structure: Chain 1 in blue; Chain 2 in red.
 
-<script type="text/javascript"> 
-$(document).ready(function()
-{
-    Info = {
-        width: 600,
-        height: 600,
-        j2sPath: "jsmol/j2s",
-        script: "load output/$basename; color background black; cartoons; spacefill off; wireframe off; select :A; color blue; select :B; color red; spacefill off; wireframe off; "
-    }
-    $("#mydiv").html(Jmol.getAppletHtml("jmolApplet0",Info))
-});
-</script>
-<span id=mydiv></span>
-    </td></tr><tr><td>
+    <script type="text/javascript"> 
+    $(document).ready(function()
+    {
+        Info = {
+            width: 400,
+            height: 400,
+            j2sPath: "jsmol/j2s",
+            script: "load output/$basename; color background black; cartoons; spacefill off; wireframe off; select :A; color blue; select :B; color red; "
+        }
+        $("#mydiv0").html(Jmol.getAppletHtml("jmolApplet0",Info))
+    });
+    </script>
+    <span id=mydiv0></span>
     <table>
-    <tr><td>Color:</td><td>
-        [<a href="javascript:Jmol.script(jmolApplet0, 'select :A; color blue; select :B; color red;')">By chain</a>] &nbsp;
-        [<a href="javascript:Jmol.script(jmolApplet0, 'select :A or :B; color group')">By residue index</a>] &nbsp;
-    </td></tr>
-    <tr><td>Spin:</td><td>
-        [<a href="javascript:Jmol.script(jmolApplet0, 'spin off')">Spin off</a>] &nbsp;
-        [<a href="javascript:Jmol.script(jmolApplet0, 'spin on')">Spin on</a>] &nbsp;
-        [<a href="javascript:Jmol.script(jmolApplet0, 'Reset')">Reset</a>]
-    </td></tr>
-    <tr><td>Render:</td><td>
-        [<a href="javascript:Jmol.script(jmolApplet0, 'set antialiasDisplay false')">Low quality</a>] &nbsp;
-        [<a href="javascript:Jmol.script(jmolApplet0, 'set antialiasDisplay true')">High quality</a>] &nbsp;
-    </td></tr>
-    <tr><td>Background:</td><td>
-        [<a href="javascript:Jmol.script(jmolApplet0, 'color background black')">Black quality</a>] &nbsp; 
-        [<a href="javascript:Jmol.script(jmolApplet0, 'color background white')">White quality</a>] &nbsp;
-    </td></tr>
-    <tr><td>Download:</td><td>
-        <a href=output/$basename download>$basename</a>
-    </td></tr>
+        <tr><td>Color:</td><td>
+            [<a href="javascript:Jmol.script(jmolApplet0, 'select :A; color blue; select :B; color red;')">By chain</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet0, 'select :A or :B; color group')">By residue index</a>] &nbsp;
+        </td></tr>
+        <tr><td>Spin:</td><td>
+            [<a href="javascript:Jmol.script(jmolApplet0, 'spin off')">Spin off</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet0, 'spin on')">Spin on</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet0, 'Reset')">Reset</a>]
+        </td></tr>
+        <tr><td>Render:</td><td>
+            [<a href="javascript:Jmol.script(jmolApplet0, 'set antialiasDisplay false')">Low quality</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet0, 'set antialiasDisplay true')">High quality</a>] &nbsp;
+        </td></tr>
+        <tr><td>Background:</td><td>
+            [<a href="javascript:Jmol.script(jmolApplet0, 'color background black')">Black quality</a>] &nbsp; 
+            [<a href="javascript:Jmol.script(jmolApplet0, 'color background white')">White quality</a>] &nbsp;
+        </td></tr>
+        <tr><td>Download:</td><td>
+            <a href=output/$basename download>$basename</a>
+        </td></tr>
     </table>
-    </td></tr>
+
+</td><td>
+    Full biological assembly
+
+    <script type="text/javascript"> 
+    $(document).ready(function()
+    {
+        Info = {
+            width: 400,
+            height: 400,
+            j2sPath: "jsmol/j2s",
+            script: "load output/$assembly_name; color background black; cartoons; spacefill off; wireframe off; select :'$chainid1'; color blue; select :'$chainid2'; color red; "
+        }
+        $("#mydiv1").html(Jmol.getAppletHtml("jmolApplet1",Info))
+    });
+    </script>
+    <span id=mydiv1></span>
+    <table>
+        <tr><td>Color:</td><td>
+            [<a href="javascript:Jmol.script(jmolApplet1, 'select :$chainid1; color blue; select :$chainid2; color red;')">By chain</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet1, 'select :$chainid1 or :$chainid2; color group')">By residue index</a>] &nbsp;
+        </td></tr>
+        <tr><td>Spin:</td><td>
+            [<a href="javascript:Jmol.script(jmolApplet1, 'spin off')">Spin off</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet1, 'spin on')">Spin on</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet1, 'Reset')">Reset</a>]
+        </td></tr>
+        <tr><td>Render:</td><td>
+            [<a href="javascript:Jmol.script(jmolApplet1, 'set antialiasDisplay false')">Low quality</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet1, 'set antialiasDisplay true')">High quality</a>] &nbsp;
+        </td></tr>
+        <tr><td>Background:</td><td>
+            [<a href="javascript:Jmol.script(jmolApplet1, 'color background black')">Black quality</a>] &nbsp; 
+            [<a href="javascript:Jmol.script(jmolApplet1, 'color background white')">White quality</a>] &nbsp;
+        </td></tr>
+        <tr><td>Download:</td><td>
+            <a href=output/$assembly_name download>$assembly_name</a>
+        </td></tr>
     </table>
+
+</td></tr>
+</table>
 </div>
 </td></tr>
-'''.replace( "$basename",os.path.basename(filename)))
+'''.replace( "$basename",os.path.basename(filename)
+  ).replace( "$assembly_name",assembly_name
+  ).replace( "$chainid1",chainid1).replace( "$chainid2",chainid2
+  ))
 
     return 
 
 if __name__=="__main__":
     form   =cgi.FieldStorage()
     entryid=form.getfirst("entryid",'')
+    entryid=entryid.strip().split()[0]
     
 
     print("Content-type: text/html\n")

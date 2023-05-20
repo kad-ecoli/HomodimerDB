@@ -41,20 +41,18 @@ if uniprot:
 para='&'.join(para_list)
 
 #### read database data ####
-fp=open(rootdir+"/data/nonredundant/dimers.txt")
-dimer_list=fp.read().splitlines()
-if pdbid:
-    dimer_list=[dimer for dimer in dimer_list if dimer.startswith(pdbid+'-')]
+fp=open(rootdir+"/data/nonredundant/dimers_info.tsv")
+lines=fp.read().splitlines()
 fp.close()
 
 fasta_dict=dict()
+fp=open(rootdir+"/data/nonredundant/seqs.fasta")
+for block in fp.read().split('>')[1:]:
+    header,sequence=block.splitlines()
+    fasta_dict[header.split()[0]]=sequence
+fp.close()
 if outfmt=='txt':
     print("Content-type: text/plain\n")
-    fp=open(rootdir+"/data/nonredundant/seq.fasta")
-    for block in fp.read().split('>')[1:]:
-        header,sequence=block.splitlines()
-        fasta_dict[header.split()[0]]=sequence
-    fp.close()
 else:
     
     print("Content-type: text/html\n")
@@ -74,17 +72,52 @@ else:
 pageLimit=200
 html_txt=''
 sort_line=[]
-for entryid in dimer_list:
+for line in lines:
+    items=line.split('\t')
+    if len(items)<10:
+        continue
+    entryid    =items[0]
+    #title      =items[1]
+    accession  =items[2]
+    accession2 =items[3]
+    reso       =items[4]
+    #method     =items[5]
+    #contactnum =items[6]
+    #seqid      =items[7]
+    #species    =items[8]
+    #species2   =items[9]
+        
     chain1,chain2=entryid.split('_')
     pdb,assembly=chain1.split('-')[:2]
+    if pdbid and pdb!=pdbid:
+        continue
+    if uniprot and accession!=uniprot and accession2!=uniprot:
+        continue
 
-    reso = ''
-    accession = ''
-    
-    items=(entryid,pdb,assembly[1:])
+    seq1       =''
+    seq2       =''
+    if chain1 in fasta_dict:
+        seq1   =fasta_dict[chain1]
+    if chain2 in fasta_dict:
+        seq2   =fasta_dict[chain2]
+    L1         =str(len(seq1))
+    L2         =str(len(seq2))
+    items.append(L1)
+    items.append(L2)
+
+    if ',' in reso:
+        reso=reso.split(',')[0]
+        items[4]=reso
+    if reso=='':
+        reso="NOT"
+        items[4]=reso
+    if reso=="NOT":
+        reso=-1
+    else:
+        reso=float(reso)
+
     if outfmt=='txt':
-        html_txt+='\t'.join(items)+'\t'+fasta_dict[chain1]+ \
-                                   '\t'+fasta_dict[chain2]+'\n'
+        html_txt+='\t'.join(items)+'\t'+seq1+'\t'+seq2+'\n'
     else:
         if order=="reso":
             sort_line.append((reso,items))
@@ -117,25 +150,61 @@ for l in range(totalNum):
         continue
     items   =sort_line[l][1]
 
-    entryid = items[0]
-    pdb     = items[1]
-    assembly= items[2]
+    entryid    =items[0]
+    title      =items[1]
+    accession  =items[2]
+    accession2 =items[3]
+    reso       =items[4]
+    method     =items[5]
+    contactnum =items[6]
+    seqid      =items[7]
+    species    =items[8]
+    species2   =items[9]
+    L1         =items[10]
+    L2         =items[11]
+    chain1,chain2=entryid.split('_')
+    pdb,assembly=chain1.split('-')[:2]
+    title=title.replace('"',"'")
+    accession_list=["<a href=https://uniprot.org/uniprot/%s target=_blank>%s</a>"%(accession,accession)]
+    if accession!=accession2:
+        accession_list.append(
+            "<a href=https://uniprot.org/uniprot/%s target=_blank>%s</a>"%(accession2,accession2))
+    method=method.lower(
+        ).replace('electron microscopy','EM'
+        ).replace('solution nmr','NMR'
+        ).replace('x-ray diffraction','X-ray')
+    species_list=[species]
+    if species!=species2:
+        species_list.append(species)
 
     bgcolor=''
     if l%2:
         bgcolor='BGCOLOR="#DEDEDE"'
+
     html_txt+='''
 <tr %s ALIGN=center>
     <td>%d</td>
     <td><a href=pdb.cgi?entryid=%s target=_blank>%s</a></td>
-    <td><a href=https://www.rcsb.org/structure/%s target=_blank>%s</a></td>
+    <td><a href=https://www.rcsb.org/structure/%s target=_blank><span title="%s">%s</span></a></td>
     <td>%s</td>
+    <td>%s</td>
+    <td>%s</td>
+    <td>%s</td>
+    <td>%s</td>
+    <td>%s</td>
+    <td>%s/%s</td>
 </tr>
 '''%(bgcolor,
     l+1,
     entryid, entryid,
-    pdb,pdb,
-    assembly
+    pdb,title,pdb,
+    '<br>'.join(accession_list),
+    reso,
+    method,
+    contactnum,
+    seqid,
+    '<br>'.join(species_list),
+    L1,L2,
     )
 fp.close()
 
@@ -195,9 +264,15 @@ div.w {
 <table border="0" align=center width=100%>    
 <tr BGCOLOR="#FF9900">
     <th ALIGN=center><strong> # </strong></th>
-    <th ALIGN=center><strong> Database entry </strong></th>
-    <th ALIGN=center><strong> PDB ID </strong></th>
-    <th ALIGN=center><strong> Assembly ID </strong></th>
+    <th ALIGN=center><strong> Database<br>entry </strong></th>
+    <th ALIGN=center><strong> PDB<br>ID </strong></th>
+    <th ALIGN=center><strong> UniProt<br>accession </strong></th>
+    <th ALIGN=center><strong> Resolution</strong></th>
+    <th ALIGN=center><strong> Method</strong></th>
+    <th ALIGN=center><strong> Contacts</strong></th>
+    <th ALIGN=center><strong> Identity</strong></th>
+    <th ALIGN=center><strong> Species</strong></th>
+    <th ALIGN=center><strong> Length</strong></th>
 </tr><tr ALIGN=center>
 ''')
 print(html_txt)
