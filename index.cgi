@@ -50,7 +50,7 @@ if os.path.isfile(filename):
     print('''
     The current database, which was updated on %s, contains a non-redundant set of
     <a href=qsearch.cgi>
-    %s chains involved in %s homodimeric interactions<a>
+    %s chains involved in %s homodimeric interactions</a>
     curated from all %s chains in %s homodimers from PDB.
     '''%(LAST_UPDATE_UTC,
         NONRED_NUM_CHAIN, NONRED_NUM_DIMER,
