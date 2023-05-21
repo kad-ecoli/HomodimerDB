@@ -64,7 +64,7 @@ if len(set(txt).difference(set("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))):
         ).difference(set("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))),html_footer)
 if len(sequence)>1500:
     ExitWithError("Unable to handle sequence with %d &gt; 1500 residues"%len(sequence),html_footer)
-print('&gt;'+header+'<br>')
+print('&gt;'+header+' (length=%d)<br>'%len(sequence))
 print('<br>'.join(textwrap.wrap(sequence,60))+'<p></p>')
 
 cmd="echo %s|%s/script/blastp -db %s/data/nonredundant/seqs.fasta -max_target_seqs 1000 -outfmt '6 sacc slen evalue nident length' "%(sequence,rootdir,rootdir)

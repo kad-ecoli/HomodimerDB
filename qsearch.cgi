@@ -68,6 +68,17 @@ else:
 <p><a href=.>[Back to Home]</a></p>
 ''')
 
+membership_dict=dict()
+fp=open(rootdir+"/data/cluster/membership.tsv")
+for line in fp.read().splitlines():
+    dimer,seqclust,nonredundant=line.split('\t')
+    if dimer==nonredundant:
+        continue
+    if not nonredundant in membership_dict:
+        membership_dict[nonredundant]=[]
+    membership_dict[nonredundant].append(dimer)
+fp.close()
+
 #### parse page ####
 pageLimit=200
 html_txt=''
@@ -78,8 +89,8 @@ for line in lines:
         continue
     entryid    =items[0]
     #title      =items[1]
-    accession  =items[2]
-    accession2 =items[3]
+    accession  =items[2].strip()
+    accession2 =items[3].strip()
     reso       =items[4]
     #method     =items[5]
     #contactnum =items[6]
@@ -89,9 +100,14 @@ for line in lines:
         
     chain1,chain2=entryid.split('_')
     pdb,assembly=chain1.split('-')[:2]
-    if pdbid and pdb!=pdbid:
-        continue
     if uniprot and accession!=uniprot and accession2!=uniprot:
+        continue
+    
+    member_list=[]
+    if entryid in membership_dict:
+        member_list=membership_dict[entryid]
+    if pdbid and pdb!=pdbid and sum(
+        [dimer.split('-')[0]==pdbid for dimer in member_list])==0:
         continue
 
     seq1       =''
@@ -104,6 +120,7 @@ for line in lines:
     L2         =str(len(seq2))
     items.append(L1)
     items.append(L2)
+    items.append(' '.join(member_list))
 
     if ',' in reso:
         reso=reso.split(',')[0]
@@ -122,7 +139,7 @@ for line in lines:
         if order=="reso":
             sort_line.append((reso,items))
         elif order=="uniprot":
-            sort_line.append((accession,items))
+            sort_line.append((accession+accession2,items))
         else:
             sort_line.append((entryid,items))
 
@@ -152,8 +169,8 @@ for l in range(totalNum):
 
     entryid    =items[0]
     title      =items[1]
-    accession  =items[2]
-    accession2 =items[3]
+    accession  =items[2].strip()
+    accession2 =items[3].strip()
     reso       =items[4]
     method     =items[5]
     contactnum =items[6]
@@ -162,6 +179,12 @@ for l in range(totalNum):
     species2   =items[9]
     L1         =items[10]
     L2         =items[11]
+    member_list=items[12].split(' ')
+    members    =''
+    for i in range(int(len(member_list)/1)):
+        members+='<br>'+' '.join(member_list[i:(i+1)])
+    if len(members):
+        members=members[4:]
     chain1,chain2=entryid.split('_')
     pdb,assembly=chain1.split('-')[:2]
     title=title.replace('"',"'")
@@ -193,6 +216,7 @@ for l in range(totalNum):
     <td>%s</td>
     <td>%s</td>
     <td>%s/%s</td>
+    <td>%s</td>
 </tr>
 '''%(bgcolor,
     l+1,
@@ -205,8 +229,8 @@ for l in range(totalNum):
     seqid,
     '<br>'.join(species_list),
     L1,L2,
+    members,
     )
-fp.close()
 
 print('''
 Download all results in tab-seperated text for 
@@ -227,33 +251,33 @@ Sort results by
           'value="%s" selected="selected"'%order))
 
 
-print('''<center> 
+navigation_html='''<center> 
 <a class='hover' href='?&page=1&%s'>&lt&lt</a>
 <a class='hover' href='?&page=%d&%s'>&lt</a>
-'''%(para,page-1,para))
+'''%(para,page-1,para)
 for p in range(page-10,page+11):
     if p<1 or p>totalPage:
         continue
     elif p==page:
-        print(' %d '%(p))
+        navigation_html+=' %d '%(p)
     else:
-        print('''<a class='hover' href='?&page=%d&%s'>%d</a>'''%(p,para,p))
-print('''
+        navigation_html+=''' <a class='hover' href='?&page=%d&%s'>%d</a> '''%(p,para,p)
+navigation_html+='''
 <a class='hover' href='?&page=%d&%s'>&gt</a>
 <a class='hover' href='?&page=last&%s'>&gt&gt</a>
 <form name="pform" action="qsearch.cgi">Go to page <select name="page" onchange="this.form.submit()">
-'''%(page+1,para,para))
+'''%(page+1,para,para)
 for p in range(1,totalPage+1):
     if p==page:
-        print('<option value="%d" selected="selected">%d</option>'%(p,p))
+        navigation_html+='<option value="%d" selected="selected">%d</option>'%(p,p)
     else:
-        print('<option value="%d">%d</option>'%(p,p))
-print('''</select>
+        navigation_html+='<option value="%d">%d</option>'%(p,p)
+navigation_html+='''</select>
 <input type=hidden name=pdbid   value='%s'>
 <input type=hidden name=uniprot value='%s'>
-</form></center><br>'''%(pdbid,uniprot))
+</form></center><br>'''%(pdbid,uniprot)
 
-
+print(navigation_html)
 print('''
 <style>
 div.w {
@@ -273,10 +297,12 @@ div.w {
     <th ALIGN=center><strong> Identity</strong></th>
     <th ALIGN=center><strong> Species</strong></th>
     <th ALIGN=center><strong> Length</strong></th>
+    <th ALIGN=center><strong> Homologs with similar<br>sequences and structures</strong></th>
 </tr><tr ALIGN=center>
 ''')
 print(html_txt)
 print("</table>")
+print(navigation_html)
 print("[<a href=.>Back to Home</a>]")
 if len(html_footer):
     print(html_footer)

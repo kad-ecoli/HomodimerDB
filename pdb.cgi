@@ -486,7 +486,6 @@ Switch viewer: <a href="?entryid=$entryid&viewer=ngl">[NGL]</a> [JSmol]
     #### similar dimer ####
     membership_dict=dict()
     fp=open(rootdir+"/data/cluster/membership.tsv")
-    membership_dict=dict()
     target_seqclust=''
     for line in fp.read().splitlines():
         dimer,seqclust,nonredundant=line.split('\t')
