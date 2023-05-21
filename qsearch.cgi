@@ -234,7 +234,8 @@ for l in range(totalNum):
 
 print('''
 Download all results in tab-seperated text for 
-<a href="?outfmt=txt&%s" download="database.txt">%d dimeric interactions</a><br>
+<a href="?outfmt=txt&%s" download="database.txt">%d dimeric interactions</a>
+(<a href=readme_database.txt>format explanation</a>)<br>
 '''%(para,totalNum))
 
 print(('''<p></p>
