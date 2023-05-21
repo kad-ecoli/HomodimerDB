@@ -10,6 +10,7 @@
     chmod a+x qsearch.cgi
     chmod a+x ssearch.cgi
     chmod a+x csearch.cgi
+    chmod a+x download.cgi
     chmod 777 output/
     chmod a+r+x -R data
 
@@ -20,6 +21,7 @@
     chcon -t httpd_sys_script_exec_t qsearch.cgi
     chcon -t httpd_sys_script_exec_t ssearch.cgi
     chcon -t httpd_sys_script_exec_t csearch.cgi
+    chcon -t httpd_sys_script_exec_t download.cgi
     chcon -t httpd_sys_script_exec_t script/blastp
     chcon -t httpd_sys_rw_content_t  output/
 
