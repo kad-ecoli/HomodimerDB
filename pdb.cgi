@@ -426,8 +426,8 @@ Switch viewer: <a href="?entryid=$entryid&viewer=ngl">[NGL]</a> [JSmol]
             [<a href="javascript:Jmol.script(jmolApplet0, 'set antialiasDisplay true')">High quality</a>] &nbsp;
         </td></tr>
         <tr><td>Background:</td><td>
-            [<a href="javascript:Jmol.script(jmolApplet0, 'color background black')">Black quality</a>] &nbsp; 
-            [<a href="javascript:Jmol.script(jmolApplet0, 'color background white')">White quality</a>] &nbsp;
+            [<a href="javascript:Jmol.script(jmolApplet0, 'color background black')">Black</a>] &nbsp; 
+            [<a href="javascript:Jmol.script(jmolApplet0, 'color background white')">White</a>] &nbsp;
         </td></tr>
         <tr><td>Download:</td><td>
             <a href=output/$basename download>$basename</a>
