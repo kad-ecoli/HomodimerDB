@@ -62,11 +62,12 @@ lines=fp.read().splitlines()
 fp.close()
 
 fasta_dict=dict()
-fp=open(rootdir+"/data/nonredundant/seqs.fasta")
-for block in fp.read().split('>')[1:]:
-    header,sequence=block.splitlines()
-    fasta_dict[header.split()[0]]=sequence
-fp.close()
+if os.path.isfile(rootdir+"/data/nonredundant/seqs.fasta"):
+    fp=open(rootdir+"/data/nonredundant/seqs.fasta")
+    for block in fp.read().split('>')[1:]:
+        header,sequence=block.splitlines()
+        fasta_dict[header.split()[0]]=sequence
+    fp.close()
 if outfmt=='txt':
     print("Content-type: text/plain\n")
 else:

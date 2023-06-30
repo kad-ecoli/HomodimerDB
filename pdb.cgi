@@ -47,8 +47,10 @@ def display_dimer(entryid,viewer):
         for c,chain in enumerate([chain1,chain2]):
             extract_filename = divided+"/"+chain+".pdb"
             if not extract_filename in tar.getnames():
-                print("ERROR! No "+extract_filename1)
-                return
+                extract_filename = chain+".pdb"
+                if not extract_filename in tar.getnames():
+                    print("ERROR! No "+extract_filename)
+                    return
             chainid='A'
             if c==1:
                 chainid='B'

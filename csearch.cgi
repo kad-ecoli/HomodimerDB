@@ -45,7 +45,7 @@ sequence cluster. As a result, one sequence cluster may include multiple structu
 each structural cluster may include multiple homodimers.
 Homodimers that share membership to one structure cluster therefore exhibit both sequence and
 structure similarity, while homodimers that have membership in different structure clusters but
-the same sequence structure would exhibit sequence similarity but distinct structures.
+the same sequence structure would exhibit sequence similarity but have distinct structures.
 ''')
 
 membership_dict=dict()
@@ -99,12 +99,17 @@ for l,seqclust in enumerate(sorted(membership_dict.keys())):
                 members+=shortid+'; '
         members+="</li>\n"
 
-    chain1,chain2=seqclust.split('_')
-    pdb,assembly,modelID1,chainID1=chain1.split('-')
-    pdb,assembly,modelID2,chainID2=chain2.split('-')
-    shortid='/'.join([pdb,assembly[1:],
-        modelID1[1:]+':'+chainID1[1:],
-        modelID2[1:]+':'+chainID2[1:]])
+    if '_' in seqclust:
+        chain1,chain2=seqclust.split('_')
+        pdb,assembly,modelID1,chainID1=chain1.split('-')
+        pdb,assembly,modelID2,chainID2=chain2.split('-')
+        shortid='/'.join([pdb,assembly[1:],
+            modelID1[1:]+':'+chainID1[1:],
+            modelID2[1:]+':'+chainID2[1:]])
+    else:
+        pdb,assembly,modelID1,chainID1=seqclust.split('-')
+        shortid='/'.join([pdb,assembly[1:],
+            modelID1[1:]+':'+chainID1[1:]])
 
     bgcolor=''
     if l%2:
