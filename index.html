@@ -206,9 +206,10 @@
 
 <!-- CONTENT START -->
 
-HomodimerDB is a database of all protein homodimeric structures in the 
-<a href="https://rcsb.org" target=_blank>PDB</a> database, pruned to exhibit
-sequence and structure non-redundancy. Starting from the complete set of known
+HomodimerDB is a database of all homodimeric protein structures in the 
+<a href="https://rcsb.org" target=_blank>PDB</a> database, pruned to be
+non-redundant both in terms of structure and sequence.
+Starting from the complete set of known
 homodimer structures (all identical-sequence chains in the PDB that are in
 contact), the database is built by clustering the set to a sequence identity
 of 90%, then selecting only unique homodimer structures, as defined by 
@@ -251,7 +252,7 @@ function example_protein()
 
 function example_pdbid()
 {
-    document.fsearchForm.structure.value = "1hv4";
+    document.fsearchForm.structure.value = "2ch1";
 }
 function example_uniprot()
 {
