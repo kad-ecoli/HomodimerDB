@@ -7,6 +7,22 @@ import textwrap
 
 rootdir=os.path.dirname(os.path.abspath(__file__))
 
+def entryid2shortid(entryid):
+    if not '_' in entryid:
+        return entryid
+    chain1,chain2=entryid.split('_')
+    pdbid,assemblyid,modelid1,chainid1=chain1.split('-')
+    pdbid,assemblyid,modelid2,chainid2=chain2.split('-')
+    assemblyid=assemblyid[1:]
+    modelid1  =modelid1[1:]
+    chainid1  =chainid1[1:]
+    modelid2  =modelid2[1:]
+    chainid2  =chainid2[1:]
+    divided   =pdbid[-3:-1]
+    shortid='/'.join([pdbid,assemblyid,
+        modelid1+':'+chainid1, modelid2+':'+chainid2])
+    return shortid
+
 html_header=""
 html_footer=""
 if os.path.isfile(rootdir+"/index.html"):
@@ -134,6 +150,8 @@ for line in lines:
         reso=float(reso)
 
     if outfmt=='txt':
+        #items[0]=entryid2shortid(items[0])
+        #items[-1]=' '.join([entryid2shortid(dimer) for dimer in member_list])
         html_txt+='\t'.join(items)+'\t'+seq1+'\t'+seq2+'\n'
     else:
         if order=="reso":
@@ -181,12 +199,10 @@ for l in range(totalNum):
     L2         =items[11]
     member_list=items[12].split(' ')
     members    =''
-    for i in range(int(len(member_list)/1)):
-        members+='<br>'+' '.join(member_list[i:(i+1)])
+    for i in range(len(member_list)):
+        members+='<br>'+entryid2shortid(member_list[i])
     if len(members):
         members=members[4:]
-    chain1,chain2=entryid.split('_')
-    pdb,assembly=chain1.split('-')[:2]
     title=title.replace('"',"'")
     accession_list=["<a href=https://uniprot.org/uniprot/%s target=_blank>%s</a>"%(accession,accession)]
     if accession!=accession2:
@@ -195,6 +211,7 @@ for l in range(totalNum):
     method=method.lower(
         ).replace('electron microscopy','EM'
         ).replace('solution nmr','NMR'
+        ).replace('solid-state nmr','ssNMR'
         ).replace('x-ray diffraction','X-ray')
     species_list=[species]
     if species!=species2:
@@ -220,7 +237,7 @@ for l in range(totalNum):
 </tr>
 '''%(bgcolor,
     l+1,
-    entryid, entryid,
+    entryid, entryid2shortid(entryid),
     pdb,title,pdb,
     '<br>'.join(accession_list),
     reso,

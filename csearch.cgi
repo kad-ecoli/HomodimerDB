@@ -38,6 +38,15 @@ else:
 <body bgcolor="#F0FFF0">
 <p><a href=.>[Back to Home]</a></p>
 ''')
+print('''
+This page describes membership of homodimers to sequence and structure clusters. The
+database is built by first clustering by sequence and then by structural clustering within each
+sequence cluster. As a result, one sequence cluster may include multiple structure clusters, while
+each structural cluster may include multiple homodimers.
+Homodimers that share membership to one structure cluster therefore exhibit both sequence and
+structure similarity, while homodimers that have membership in different structure clusters but
+the same sequence structure would exhibit sequence similarity but distinct structures.
+''')
 
 membership_dict=dict()
 fp=open(rootdir+"/data/cluster/membership.tsv")
@@ -52,19 +61,50 @@ fp.close()
 
 #### parse page ####
 pageLimit=200
+totalPage=1+int(len(membership_dict)/pageLimit)
+if not page:
+    page=1
+elif page=="last":
+    page=totalPage
+else:
+    page=int(page)
+if page<1:
+    page=1
+elif page>totalPage:
+    page=totalPage
+
 html_txt=''
 for l,seqclust in enumerate(sorted(membership_dict.keys())):
     if l<pageLimit*(int(page)-1) or l>=pageLimit*(int(page)):
         continue
     members=''
     for nonredundant in sorted(membership_dict[seqclust].keys()):
-        members+='''<li><a href=pdb.cgi?entryid=$entryid>$entryid</a>:
-        '''.replace('$entryid',nonredundant)
+        chain1,chain2=nonredundant.split('_')
+        pdb,assembly,modelID1,chainID1=chain1.split('-')
+        pdb,assembly,modelID2,chainID2=chain2.split('-')
+        shortid='/'.join([pdb,assembly[1:],
+            modelID1[1:]+':'+chainID1[1:],
+            modelID2[1:]+':'+chainID2[1:]])
+        members+='''<li><a href=pdb.cgi?entryid=$entryid>$shortid</a>:
+        '''.replace('$entryid',nonredundant).replace('$shortid',shortid)
         for dimer in membership_dict[seqclust][nonredundant]:
             if dimer!=nonredundant:
-                members+=dimer+'; '
+                chain1,chain2=dimer.split('_')
+                pdb,assembly,modelID1,chainID1=chain1.split('-')
+                pdb,assembly,modelID2,chainID2=chain2.split('-')
+                shortid='/'.join([pdb,assembly[1:],
+                    modelID1[1:]+':'+chainID1[1:],
+                    modelID2[1:]+':'+chainID2[1:]])
+                #members+=dimer+'; '
+                members+=shortid+'; '
         members+="</li>\n"
 
+    chain1,chain2=seqclust.split('_')
+    pdb,assembly,modelID1,chainID1=chain1.split('-')
+    pdb,assembly,modelID2,chainID2=chain2.split('-')
+    shortid='/'.join([pdb,assembly[1:],
+        modelID1[1:]+':'+chainID1[1:],
+        modelID2[1:]+':'+chainID2[1:]])
 
     bgcolor=''
     if l%2:
@@ -78,21 +118,10 @@ for l,seqclust in enumerate(sorted(membership_dict.keys())):
 </tr>
 '''%(bgcolor,
     l+1,
-    seqclust,
+    shortid,#seqclust,
     members,
     )
 
-totalPage=1+int(len(membership_dict)/pageLimit)
-if not page:
-    page=1
-elif page=="last":
-    page=totalPage
-else:
-    page=int(page)
-if page<1:
-    page=1
-elif page>totalPage:
-    page=totalPage
 
 navigation_html='''<center> 
 <a class='hover' href='?&page=1'>&lt&lt</a>

@@ -11,11 +11,7 @@ import re
 
 rootdir=os.path.dirname(os.path.abspath(__file__))
 
-def display_dimer(entryid,viewer):
-    print('''
-<tr><td><h1 align=center>$entryid</h1></td></tr>
-'''.replace("$entryid",entryid))
-
+def entryid2shortid(entryid):
     chain1,chain2=entryid.split('_')
     pdbid,assemblyid,modelid1,chainid1=chain1.split('-')
     pdbid,assemblyid,modelid2,chainid2=chain2.split('-')
@@ -25,6 +21,23 @@ def display_dimer(entryid,viewer):
     modelid2  =modelid2[1:]
     chainid2  =chainid2[1:]
     divided   =pdbid[-3:-1]
+    shortid='/'.join([pdbid,assemblyid,
+        modelid1+':'+chainid1, modelid2+':'+chainid2])
+    return shortid
+
+def display_dimer(entryid,viewer):
+    chain1,chain2=entryid.split('_')
+    pdbid,assemblyid,modelid1,chainid1=chain1.split('-')
+    pdbid,assemblyid,modelid2,chainid2=chain2.split('-')
+    assemblyid=assemblyid[1:]
+    modelid1  =modelid1[1:]
+    chainid1  =chainid1[1:]
+    modelid2  =modelid2[1:]
+    chainid2  =chainid2[1:]
+    divided   =pdbid[-3:-1]
+    print('''
+<tr><td><h1 align=center>$entryid</h1></td></tr>
+'''.replace("$entryid",entryid2shortid(entryid)))
     
     #### display sequence ####
     filename = rootdir+"/output/"+entryid+".pdb.gz"
@@ -289,13 +302,17 @@ $BioLiP_html
         cmd="curl -s https://files.wwpdb.org/pub/pdb/data/assemblies/mmCIF/divided/%s/%s-assembly%s.cif.gz -o %s"%(divided,pdbid,assemblyid,assembly_filename)
         os.system(cmd)
 
+    jsmolBug=False # jsmol has a bug in showing chain ID with more than 1 character
+    cmd="zcat "+assembly_filename+"|"+rootdir+"/script/pdb2fasta - |grep -F '>'|cut -f2 -d:|cut -f1"
+    p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
+    stdout,stderr=p.communicate()
+    chainid_list=stdout.decode().splitlines()
+    if max([len(chainid) for chainid in chainid_list])>1:
+        jsmolBug=True
+        
     if not viewer:
-        cmd="zcat "+assembly_filename+"|"+rootdir+"/script/pdb2fasta - |grep -F '>'|cut -f2 -d:|cut -f1"
-        p=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        stdout,stderr=p.communicate()
-        chainid_list=stdout.decode().splitlines()
-        if max([len(chainid) for chainid in chainid_list])>1:
+        if jsmolBug:
             viewer="ngl"
         else:
             viewer="jmol"
@@ -383,6 +400,11 @@ Switch viewer: [NGL] <a href="?entryid=$entryid&viewer=jmol">[JSmol]</a>
   ).replace( "$chainid1",chainid1).replace( "$chainid2",chainid2
   ))
     else:
+        jsmolBug1=''
+        jsmolBug2=''
+        if jsmolBug:
+            jsmolBug1="<!----"
+            jsmolBug2="---->"
         print('''
 <tr><td>
 <div id="headerDiv">
@@ -436,7 +458,7 @@ Switch viewer: <a href="?entryid=$entryid&viewer=ngl">[NGL]</a> [JSmol]
 
 </td><td>
     Full biological assembly
-
+$jsmolBug1
     <script type="text/javascript"> 
     $(document).ready(function()
     {
@@ -450,7 +472,9 @@ Switch viewer: <a href="?entryid=$entryid&viewer=ngl">[NGL]</a> [JSmol]
     });
     </script>
     <span id=mydiv1></span>
+$jsmolBug2
     <table>
+$jsmolBug1
         <tr><td>Color:</td><td>
             [<a href="javascript:Jmol.script(jmolApplet1, 'select :$chainid1; color red; select :$chainid2; color blue;')">By chain</a>] &nbsp;
             [<a href="javascript:Jmol.script(jmolApplet1, 'select :$chainid1 or :$chainid2; color group')">By residue index</a>] &nbsp;
@@ -468,6 +492,7 @@ Switch viewer: <a href="?entryid=$entryid&viewer=ngl">[NGL]</a> [JSmol]
             [<a href="javascript:Jmol.script(jmolApplet1, 'color background black')">Black quality</a>] &nbsp; 
             [<a href="javascript:Jmol.script(jmolApplet1, 'color background white')">White quality</a>] &nbsp;
         </td></tr>
+$jsmolBug2
         <tr><td>Download:</td><td>
             <a href=output/$assembly_name download>$assembly_name</a>
         </td></tr>
@@ -480,6 +505,8 @@ Switch viewer: <a href="?entryid=$entryid&viewer=ngl">[NGL]</a> [JSmol]
 '''.replace( "$basename",os.path.basename(filename)
   ).replace( "$entryid",entryid
   ).replace( "$assembly_name",assembly_name
+  ).replace( "$jsmolBug1",jsmolBug1
+  ).replace( "$jsmolBug2",jsmolBug2
   ).replace( "$chainid1",chainid1).replace( "$chainid2",chainid2
   ))
 
@@ -517,13 +544,17 @@ Switch viewer: <a href="?entryid=$entryid&viewer=ngl">[NGL]</a> [JSmol]
         <td><b>Other dimers with similar sequences and structures</b></td>
         <td>$dimer_list</td>
     </tr>
-            '''.replace("$dimer_list",' '.join(membership_dict[seqclust][entryid])))
+            '''.replace("$dimer_list",' '.join([entryid2shortid(dimer
+                ) for dimer in membership_dict[seqclust][entryid]])))
         if len(membership_dict[seqclust])>1:
             dimer_list=[]
             for nonredundant in membership_dict[seqclust]:
                 if nonredundant==entryid:
                     continue
-                dimer_list.append("<li><a href=pdb.cgi?entryid="+nonredundant+">"+nonredundant+"</a> "+' '.join(membership_dict[seqclust][nonredundant])+'</li>')
+                dimer_list.append("<li><a href=pdb.cgi?entryid="+nonredundant+ \
+                    ">"+entryid2shortid(nonredundant)+"</a> "+' '.join([
+                    entryid2shortid(dimer) for dimer in \
+                    membership_dict[seqclust][nonredundant]])+'</li>')
             print('''
     <tr align=center>
         <td><b>Other dimers with similar sequences but different poses</b></td>
